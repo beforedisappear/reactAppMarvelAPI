@@ -1,23 +1,39 @@
 import { useState, useEffect, useRef } from "react";
 import Spinner from "../spinner/Spinner";
 import ErrorMessage from "../errorMessage/ErrorMessage";
-import Service from "../../services/service";
+import useService from "../../services/service";
 import "./charList.scss";
 
 const CharList = (props) => {
   const [charList, setCharList] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [newItemsLoading, setNewItemsLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [offset, setOffset] = useState(210);
   const [isEnd, setIsEnd] = useState(false);
+  // custom hook, states : loading and error
+  const { loading, error, getAllCharacters } = useService();
 
-  const marvelService = new Service();
+  const handlerSignal = useRef(false);
 
   useEffect(() => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // useEffect(() => {
+  //   window.removeEventListener("scroll", onScroll);
+  // }, [error]);
+  
+  useEffect(() => {
+    handlerSignal.current = error;
+  }, [error]);
+
+  const onScroll = (event) => {
+    let curHeight = window.scrollY + document.documentElement.clientHeight;
+    let pageHeight = document.documentElement.offsetHeight - 200;
+    if (curHeight > pageHeight && !handlerSignal.current) {
+      setNewItemsLoading(true);
+    }
+  };
 
   useEffect(() => {
     if (newItemsLoading && !isEnd) {
@@ -25,33 +41,16 @@ const CharList = (props) => {
     }
   }, [newItemsLoading]);
 
-  const onScroll = (event) => {
-    let curHeight = window.scrollY + document.documentElement.clientHeight;
-    let pageHeight = document.documentElement.offsetHeight - 200;
-    if (curHeight > pageHeight) {
-      setNewItemsLoading(true);
-    }
-  };
-
   const onRequest = () => {
-    marvelService
-      .getAllCharacters(offset)
+    getAllCharacters(offset)
       .then(onCharactersLoaded)
-      .catch(onError)
       .finally(() => setNewItemsLoading(false));
   };
 
   const onCharactersLoaded = (newCharList) => {
     setCharList((charList) => [...charList, ...newCharList]);
-    setLoading(false);
-    setError(false);
     setOffset((offset) => offset + 9);
     setIsEnd(newCharList.length < 9 ? true : false);
-  };
-
-  const onError = () => {
-    setError(false);
-    setLoading(false);
   };
 
   // Этот метод создан для оптимизации,
@@ -85,19 +84,114 @@ const CharList = (props) => {
 
   const items = renderItems(charList);
   const errorMessage = error ? <ErrorMessage /> : null;
-  const spinner = loading ? <Spinner /> : null;
-  const content = !(loading || error) ? items : null;
+  // первичная для первичной загрузки
+  const spinner = loading && offset == 210 ? <Spinner /> : null;
 
   return (
     <div className="char__list">
       {errorMessage}
       {spinner}
-      {content}
+      {items}
     </div>
   );
 };
 
 export default CharList;
+
+// const CharList = (props) => {
+//   const [charList, setCharList] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [newItemsLoading, setNewItemsLoading] = useState(true);
+//   const [error, setError] = useState(false);
+//   const [offset, setOffset] = useState(210);
+//   const [isEnd, setIsEnd] = useState(false);
+
+//   const marvelService = new Service();
+
+//   useEffect(() => {
+//     window.addEventListener("scroll", onScroll);
+//     return () => window.removeEventListener("scroll", onScroll);
+//   }, []);
+
+//   useEffect(() => {
+//     if (newItemsLoading && !isEnd) {
+//       onRequest();
+//     }
+//   }, [newItemsLoading]);
+
+//   const onScroll = (event) => {
+//     let curHeight = window.scrollY + document.documentElement.clientHeight;
+//     let pageHeight = document.documentElement.offsetHeight - 200;
+//     if (curHeight > pageHeight) {
+//       setNewItemsLoading(true);
+//     }
+//   };
+
+//   const onRequest = () => {
+//     marvelService
+//       .getAllCharacters(offset)
+//       .then(onCharactersLoaded)
+//       .catch(onError)
+//       .finally(() => setNewItemsLoading(false));
+//   };
+
+//   const onCharactersLoaded = (newCharList) => {
+//     setCharList((charList) => [...charList, ...newCharList]);
+//     setLoading(false);
+//     setError(false);
+//     setOffset((offset) => offset + 9);
+//     setIsEnd(newCharList.length < 9 ? true : false);
+//   };
+
+//   const onError = () => {
+//     setError(false);
+//     setLoading(false);
+//   };
+
+//   // Этот метод создан для оптимизации,
+//   // чтобы не помещать такую конструкцию в метод render
+//   function renderItems(arr) {
+//     const items = arr.map((item) => {
+//       const active = props.selectedId === item.id;
+//       const clazz = active ? "char__item char__item_selected" : "char__item";
+//       let imgStyle = { objectFit: "cover" };
+//       if (
+//         item.preview ===
+//         "http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg"
+//       ) {
+//         imgStyle = { objectFit: "unset" };
+//       }
+//       return (
+//         <li
+//           tabIndex={0}
+//           onFocus={() => props.onCharSelected(item.id)}
+//           className={clazz}
+//           key={item.id}
+//         >
+//           <img src={item.preview} alt={item.name} style={imgStyle} />
+//           <div className="char__name">{item.name}</div>
+//         </li>
+//       );
+//     });
+//     // А эта конструкция вынесена для центровки спиннера/ошибки
+//     return <ul className="char__grid">{items}</ul>;
+//   }
+
+//   const items = renderItems(charList);
+//   const errorMessage = error ? <ErrorMessage /> : null;
+//   const spinner = loading ? <Spinner /> : null;
+//   const content = !(loading || error) ? items : null;
+
+//   return (
+//     <div className="char__list">
+//       {errorMessage}
+//       {spinner}
+//       {content}
+//     </div>
+//   );
+// };
+
+// export default CharList;
 
 // class CharList extends Component {
 //   state = {
