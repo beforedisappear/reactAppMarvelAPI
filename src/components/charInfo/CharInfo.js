@@ -4,6 +4,7 @@ import ErrorMessage from "../errorMessage/ErrorMessage";
 import Skeleton from "../skeleton/Skeleton";
 
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 import "./charInfo.scss";
 
@@ -88,7 +89,7 @@ const View = ({ char }) => {
           if (i > 9) return;
           return (
             <li key={i} className="char__comics-item">
-              {item.name}
+              <Link to={`comics/${item.resourceURI.split('/').at(-1)}`}>{item.name}</Link>
             </li>
           );
         })}

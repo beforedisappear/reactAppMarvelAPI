@@ -19,13 +19,15 @@ const CharList = (props) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // useEffect(() => {
-  //   window.removeEventListener("scroll", onScroll);
-  // }, [error]);
-  
   useEffect(() => {
     handlerSignal.current = error;
   }, [error]);
+
+  useEffect(() => {
+    if (newItemsLoading && !isEnd) {
+      onRequest();
+    }
+  }, [newItemsLoading]);
 
   const onScroll = (event) => {
     let curHeight = window.scrollY + document.documentElement.clientHeight;
@@ -34,12 +36,6 @@ const CharList = (props) => {
       setNewItemsLoading(true);
     }
   };
-
-  useEffect(() => {
-    if (newItemsLoading && !isEnd) {
-      onRequest();
-    }
-  }, [newItemsLoading]);
 
   const onRequest = () => {
     getAllCharacters(offset)
@@ -85,7 +81,7 @@ const CharList = (props) => {
   const items = renderItems(charList);
   const errorMessage = error ? <ErrorMessage /> : null;
   // первичная для первичной загрузки
-  const spinner = loading && offset == 210 ? <Spinner /> : null;
+  const spinner = loading && offset === 210 ? <Spinner /> : null;
 
   return (
     <div className="char__list">
